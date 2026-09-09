@@ -1,5 +1,7 @@
 import { Link, Outlet, NavLink } from "react-router-dom";
 import { Button } from "../ui/Button";
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/clerk-react";
+import { isClerkConfigured } from "../../utils/clerk";
 
 export function PublicLayout() {
   return (
@@ -27,14 +29,39 @@ export function PublicLayout() {
             ))}
           </nav>
           <div className="flex items-center gap-2">
-            <Link to="/login">
-              <Button variant="ghost" size="sm">
-                Log in
-              </Button>
-            </Link>
-            <Link to="/signup">
-              <Button size="sm">Get started</Button>
-            </Link>
+            {isClerkConfigured ? (
+              <>
+                <SignedOut>
+                  <SignInButton mode="modal">
+                    <Button variant="ghost" size="sm">
+                      Sign In
+                    </Button>
+                  </SignInButton>
+                  <SignUpButton mode="modal">
+                    <Button size="sm">Sign Up</Button>
+                  </SignUpButton>
+                </SignedOut>
+                <SignedIn>
+                  <Link to="/app">
+                    <Button variant="ghost" size="sm">
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <UserButton afterSignOutUrl="/" />
+                </SignedIn>
+              </>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="ghost" size="sm">
+                    Log in
+                  </Button>
+                </Link>
+                <Link to="/signup">
+                  <Button size="sm">Get started</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>

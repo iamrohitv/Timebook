@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { useUser, UserButton, SignOutButton } from "@clerk/clerk-react";
+import { isClerkConfigured } from "../../utils/clerk";
 import { cn } from "../../utils/cn";
 import { initials } from "../../utils/format";
 import { Button } from "../ui/Button";
@@ -56,10 +58,67 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   );
 }
 
+function HeaderAuth() {
+  const { user: mockUser, logout } = useAuth();
+  const nav = useNavigate();
+
+  if (isClerkConfigured) {
+    const { user, isLoaded } = useUser();
+    if (!isLoaded) {
+      return <span className="text-xs text-muted-foreground">Loading…</span>;
+    }
+    if (!user) {
+      // Should not happen inside protected AppLayout, but handle
+      return (
+        <Button variant="ghost" size="sm" onClick={() => nav("/sign-in")}>
+          Sign In
+        </Button>
+      );
+    }
+    const name = user.fullName || user.primaryEmailAddress?.emailAddress || "User";
+    const email = user.primaryEmailAddress?.emailAddress || "";
+    return (
+      <>
+        <div className="hidden sm:flex flex-col items-end leading-none mr-1">
+          <span className="text-sm font-medium">{name}</span>
+          <span className="text-xs text-muted-foreground truncate max-w-[160px]">{email}</span>
+        </div>
+        <UserButton afterSignOutUrl="/" />
+        <SignOutButton>
+          <Button variant="ghost" size="sm">
+            Logout
+          </Button>
+        </SignOutButton>
+      </>
+    );
+  }
+
+  // Fallback to mock auth when Clerk not configured
+  return (
+    <>
+      <div className="hidden sm:flex flex-col items-end leading-none mr-1">
+        <span className="text-sm font-medium">{mockUser?.name}</span>
+        <span className="text-xs text-muted-foreground">{mockUser?.email}</span>
+      </div>
+      <div className="h-8 w-8 rounded-full bg-violet-600 text-white grid place-items-center text-xs font-bold">
+        {mockUser ? initials(mockUser.name) : "?"}
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          logout();
+          nav("/login");
+        }}
+      >
+        Logout
+      </Button>
+    </>
+  );
+}
+
 export function AppLayout() {
   const [open, setOpen] = useState(false);
-  const { user, logout } = useAuth();
-  const nav = useNavigate();
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -89,16 +148,7 @@ export function AppLayout() {
             <span className="text-muted-foreground">{new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short" })}</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <div className="hidden sm:flex flex-col items-end leading-none mr-1">
-              <span className="text-sm font-medium">{user?.name}</span>
-              <span className="text-xs text-muted-foreground">{user?.email}</span>
-            </div>
-            <div className="h-8 w-8 rounded-full bg-violet-600 text-white grid place-items-center text-xs font-bold">
-              {user ? initials(user.name) : "?"}
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => { logout(); nav("/login"); }}>
-              Logout
-            </Button>
+            <HeaderAuth />
           </div>
         </header>
 

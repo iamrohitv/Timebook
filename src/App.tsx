@@ -6,6 +6,7 @@ import { Features } from "./pages/public/Features";
 import { About } from "./pages/public/About";
 import { Privacy, Terms } from "./pages/public/Privacy";
 import { Login, Signup, Forgot } from "./pages/public/Auth";
+import { ClerkSignIn, ClerkSignUp } from "./pages/public/ClerkAuthPages";
 import { Dashboard } from "./pages/app/Dashboard";
 import { Timetable } from "./pages/app/Timetable";
 import { Attendance } from "./pages/app/Attendance";
@@ -14,10 +15,27 @@ import { AINotes } from "./pages/app/AINotes";
 import { AIChat } from "./pages/app/AIChat";
 import { Community } from "./pages/app/Community";
 import { Settings } from "./pages/app/Settings";
-import { useAuth } from "./contexts/AuthContext";
+import { useAuth as useMockAuth } from "./contexts/AuthContext";
+import { useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { isClerkConfigured } from "./utils/clerk";
 
 function Protected({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  // When Clerk is configured, it is source of truth; else fallback to mock
+  if (isClerkConfigured) {
+    const { isLoaded, isSignedIn } = useClerkAuth();
+    if (!isLoaded) {
+      return (
+        <div className="grid place-items-center py-20 text-sm text-muted-foreground">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-violet-600 mr-2 inline-block" />
+          Checking authentication…
+        </div>
+      );
+    }
+    if (!isSignedIn) return <Navigate to="/sign-in" replace />;
+    return <>{children}</>;
+  }
+  // Fallback to mock auth
+  const { isAuthenticated } = useMockAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
@@ -44,9 +62,13 @@ export default function App() {
           <Route path="about" element={<About />} />
           <Route path="privacy" element={<Privacy />} />
           <Route path="terms" element={<Terms />} />
+          {/* Mock auth routes (fallback) */}
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<Signup />} />
           <Route path="forgot" element={<Forgot />} />
+          {/* Clerk routes */}
+          <Route path="sign-in/*" element={<ClerkSignIn />} />
+          <Route path="sign-up/*" element={<ClerkSignUp />} />
         </Route>
 
         <Route

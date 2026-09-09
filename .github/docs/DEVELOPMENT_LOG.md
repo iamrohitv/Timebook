@@ -51,6 +51,19 @@ Chronological history. Future reader should understand reasoning, not just outco
 
 ---
 
+### 2026-09-09 — Clerk authentication integration
+
+**Date:** 2026-09-09  
+**What was changed:** Integrated Clerk authentication into existing React+Vite site without rebuilding. Added `@clerk/clerk-react` 5.61.3, `pnpm-workspace.yaml` allowBuilds, `.env.example` for `VITE_CLERK_PUBLISHABLE_KEY` (app_3J56gEznHRW6jvg340IZkX7NOrY), `src/vite-env.d.ts`, `src/utils/clerk.ts` (isClerkConfigured), `src/pages/public/ClerkAuthPages.tsx` (SignIn/SignUp routing path), updated `src/main.tsx` to wrap with `ClerkProvider` conditionally, `src/components/layout/PublicLayout.tsx` to show `SignedIn/SignedOut` + `UserButton` + modal `SignInButton/SignUpButton`, `src/components/layout/AppLayout.tsx` to show Clerk `useUser` + `UserButton`/`SignOutButton` with mock fallback, `src/App.tsx` to protect `/app/*` via Clerk `useAuth` (`isLoaded`/`isSignedIn` → redirect `/sign-in`) with fallback to mock, and `src/contexts/AuthContext.tsx` to map Clerk user to app `User` as source of truth. Preserved existing mock routes `/login`/`/signup` as fallback when Clerk not configured; added new `/sign-in/*` and `/sign-up/*` Clerk routes inside `PublicLayout`.  
+**Why:** Owner requested Clerk for app_3J56gEznHRW6jvg340IZkX7NOrY with Vercel deploy preserved, public landing remains open, app routes require sign-in, Google+email via Clerk.  
+**Files/components affected:** `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `vite-env.d.ts`, `.env.example`, `src/main.tsx`, `src/App.tsx`, `src/utils/clerk.ts`, `src/contexts/AuthContext.tsx`, `src/components/layout/PublicLayout.tsx`, `src/components/layout/AppLayout.tsx`, `src/pages/public/ClerkAuthPages.tsx`  
+**Implementation details:** `main.tsx` reads `import.meta.env.VITE_CLERK_PUBLISHABLE_KEY`; if missing renders `MissingKeyBanner` and falls back to mock `AuthProvider` (no blank screen); if present wraps with `ClerkProvider` (`afterSignOutUrl="/"`, `signInUrl="/sign-in"`). `AuthContext` now has `ClerkBackedProvider` that maps `clerkUser.id`/`fullName`/`primaryEmailAddress`/`imageUrl` to `User`. `App.tsx` Protected checks `isClerkConfigured` → Clerk `isLoaded`/`isSignedIn` else mock `isAuthenticated`. PublicLayout and AppLayout both branch on `isClerkConfigured` to avoid rendering Clerk components without provider. `pnpm approve-builds --all` run to allow `@clerk/shared` postinstall. Build verified: `npm run build` 110 modules, 395kB JS (was 52/307kB).  
+**Problems encountered:** `@clerk/clerk-react` deprecated warning (still latest 5.61.3, new `@clerk/react` 6.15 exists but kept for Vite docs), `pnpm install` blocked by `[ERR_PNPM_IGNORED_BUILDS] @clerk/shared` — solved via `pnpm approve-builds --all` + `pnpm-workspace.yaml` `allowBuilds`. `clerk` CLI binary `@clerk/cli-win32-x64` failed to fetch with `UND_ERR_SOCKET`/`ERR_SSL_CIPHER_OPERATION_FAILED` (Node 24 Windows, transient) — `npm i -g clerk` installed but `clerk --version` reports missing platform; retried `npm i -g @clerk/cli-win32-x64` also SSL failed. Decision: skip `clerk auth login`/`clerk init` (would be destructive check needed) and document manual Vercel env instead.  
+**Current status:** Clerk integrated, responsive, existing UI preserved, build passes, missing-key fallback works, protected `/app` requires Clerk sign-in when key set, public `/` open. CLI install incomplete due to network; `clerk doctor` not run.  
+**Next step:** Owner must add `VITE_CLERK_PUBLISHABLE_KEY` (pk_test_…) from Clerk Dashboard (app_3J56gEznHRW6jvg340IZkX7NOrY) to `.env.local` and Vercel env, enable Google in Clerk Dashboard, then test sign-in/up and `clerk doctor`.
+
+---
+
 ### Next session template
 
 **Date:**  
