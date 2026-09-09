@@ -7,7 +7,9 @@ import { ThemeProvider } from "./contexts/ThemeContext.tsx";
 import { AIProviderCtx } from "./contexts/AIContext.tsx";
 import { ClerkProvider } from "@clerk/clerk-react";
 
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined;
+const PUBLISHABLE_KEY =
+  (import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined) ||
+  (import.meta.env as Record<string, string | undefined>).NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 function MissingKeyBanner() {
   if (PUBLISHABLE_KEY) return null;
